@@ -3,4 +3,6 @@
     <string name="rowGeofenceIntent">row-geofence</string>
     <string name="rowGeofenceID">ROW geofence for Gimbal</string>
     <string name="outerGeofenceID">outer geofence</string>
+    <string name="insideROW">You are at The ROW.</string>
+    <string name="outsideROW">You will be notified when you arrive at The ROW</string>
 </resources>

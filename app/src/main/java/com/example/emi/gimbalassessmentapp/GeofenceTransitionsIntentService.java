@@ -23,8 +23,8 @@ import java.util.List;
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String NAME = "Geofencing";
-    private static final String ROW_GEOFENCE_ID = String.valueOf(R.string.rowGeofenceID);
-    private static final String OUTER_GEOFENCE_ID = String.valueOf(R.string.outerGeofenceID);
+    private String ROW_GEOFENCE_ID;
+    private String OUTER_GEOFENCE_ID;
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
@@ -41,6 +41,10 @@ public class GeofenceTransitionsIntentService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
+        // Initialize values
+        ROW_GEOFENCE_ID = getResources().getString(R.string.rowGeofenceID);
+        OUTER_GEOFENCE_ID = getResources().getString(R.string.outerGeofenceID);
+
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             return;
@@ -48,16 +52,21 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
 
+        // For each transition, we check which geofence and the type of transition
         List<String> geofenceIDList = toIDs(geofencingEvent.getTriggeringGeofences());
         for (String geofenceID : geofenceIDList) {
+
             if (geofenceID.equals(ROW_GEOFENCE_ID)) {
+
                 if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                     sendNotification();
                     updateUX(true);
                 } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
                     updateUX(false);
                 }
+
             } else if (geofenceID.equals(OUTER_GEOFENCE_ID)) {
+
                 if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                     updateSpeed(true);
                 } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
@@ -89,18 +98,31 @@ public class GeofenceTransitionsIntentService extends IntentService {
         notificationManager.notify(0, builder.build());
     }
 
+    /**
+     * This function calls the InROWReceiver to update the UX
+     * @param inROW
+     */
     private void updateUX(Boolean inROW) {
-        Intent receiverIntent = new Intent(String.valueOf(R.string.rowGeofenceIntent));
+        Intent receiverIntent = new Intent(getString(R.string.rowGeofenceIntent));
         receiverIntent.putExtra("inROW", inROW);
         LocalBroadcastManager.getInstance(this).sendBroadcast(receiverIntent);
     }
 
+    /**
+     * This function calls the InROWReceiver to update the location update speed and priority
+     * @param inOuter
+     */
     private void updateSpeed(Boolean inOuter) {
-        Intent receiverIntent = new Intent(String.valueOf(R.string.rowGeofenceIntent));
+        Intent receiverIntent = new Intent(getString(R.string.rowGeofenceIntent));
         receiverIntent.putExtra("inOuter", inOuter);
         LocalBroadcastManager.getInstance(this).sendBroadcast(receiverIntent);
     }
 
+    /**
+     * This function changes the list of Geofences into a list of their IDs
+     * @param geofenceList
+     * @return geofenceIDList
+     */
     private List<String> toIDs(List<Geofence> geofenceList) {
         List<String> geofenceIDList = new ArrayList<>();
 

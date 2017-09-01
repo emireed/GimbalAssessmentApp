@@ -19,12 +19,15 @@ public class InROWReceiver  extends BroadcastReceiver{
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        // Obtain the passed in values
         Boolean inROW = intent.getBooleanExtra("inROW", false);
         Boolean inOuter = intent.getBooleanExtra("inOuter", true);
+
+        // Check where the user is and change the UX or speed accordingly
         if (inROW) {
-            mainActivity.textView.setText("You are at The ROW.");
+            mainActivity.textView.setText(mainActivity.getResources().getString(R.string.outsideROW));
         } else {
-            mainActivity.textView.setText("You will be notified when you arrive at The ROW");
+            mainActivity.textView.setText(mainActivity.getResources().getString(R.string.outsideROW));
             if (inOuter) {
                 mainActivity.speedUpUpdates();
             } else {

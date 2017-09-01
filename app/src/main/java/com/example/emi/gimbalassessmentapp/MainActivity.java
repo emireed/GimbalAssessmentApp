@@ -37,8 +37,8 @@ public class MainActivity extends AppCompatActivity {
     private GeofencingClient mGeofencingClient;
     private Geofence ROWGeofence;
     private Geofence outerGeofence;
-    private static final String ROW_GEOFENCE_ID = String.valueOf(R.string.rowGeofenceID);
-    private static final String OUTER_GEOFENCE_ID = String.valueOf(R.string.outerGeofenceID);
+    private String ROW_GEOFENCE_ID;
+    private String OUTER_GEOFENCE_ID;
 
     // Static values about ROW geofence
     private static final double ROW_LAT = 34.0339128;
@@ -63,14 +63,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Setup the layout
+        // Setup the layout and values
         textView = (TextView) findViewById(R.id.location_text);
+        ROW_GEOFENCE_ID = getString(R.string.rowGeofenceID);
+        OUTER_GEOFENCE_ID = getString(R.string.outerGeofenceID);
 
         // Setup the receiver
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         InROWReceiver inROWReceiver = new InROWReceiver(this);
         localBroadcastManager.registerReceiver(inROWReceiver,
-                new IntentFilter(String.valueOf(R.string.rowGeofenceIntent)));
+                new IntentFilter(getString(R.string.rowGeofenceIntent)));
 
         // Setup Clients
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -84,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(REQUEST_GEOFENCE_ADD);
         } else {
-            textView.setText("You will be notified when you arrive at The ROW");
+            textView.setText(getString(R.string.outsideROW));
             addGeofence();
         }
 
@@ -96,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(REQUEST_LOCATION_UPDATE);
         } else {
-            textView.setText("You will be notified when you arrive at The ROW");
+            textView.setText(getString(R.string.outsideROW));
             startUpdatingLocation();
         }
 
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
             requestPermissions(REQUEST_LOCATION_UPDATE);
         } else {
             // If yes and not already updating, start updating location
-            textView.setText("You will be notified when you arrive at The ROW");
+            textView.setText(getString(R.string.outsideROW));
             if (!mUpdatingLocation) {
                 addGeofence();
                 startUpdatingLocation();
@@ -122,6 +124,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+
+    /*************** LOCATION SERVICES FUNCTIONS ******************************/
 
     /**
      * This function sets up the location callback that will keep tracking the phones location
@@ -172,9 +177,42 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * This function slows down the location updates and lowers priority.
+     * Used when user is far away from The ROW.
+     */
+    public void slowDownUpdates() {
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
+                .setInterval(LONG_INTERVAL)
+                .setFastestInterval(SHORT_INTERVAL/2);
+
+        startUpdatingLocation();
+    }
+
+    /**
+     * This function speeds up the location updates and raises priority.
+     * Used when user is close to or in The ROW.
+     */
+    public void speedUpUpdates() {
+        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        mLocationRequest = LocationRequest.create()
+                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
+                .setInterval(SHORT_INTERVAL)
+                .setFastestInterval(SHORT_INTERVAL/2);
+
+        startUpdatingLocation();
+    }
+
+
+    /********************* GEOFENCE FUNCTIONS ************************************/
+
+    /**
      * This function initializes the geofence around The ROW in DTLA
+     * and the outer geofence used to determine if the user is close or far.
      */
     private void createGeofence() {
+        // Geofence around The ROW
         ROWGeofence = new Geofence.Builder()
                 .setCircularRegion(ROW_LAT, ROW_LON, ROW_RAD)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
@@ -183,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
                         Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();
 
+        // Outer geofence
         outerGeofence = new Geofence.Builder()
                 .setCircularRegion(ROW_LAT, ROW_LON, OUTER_RAD)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
@@ -250,7 +289,7 @@ public class MainActivity extends AppCompatActivity {
             case REQUEST_GEOFENCE_ADD: {
                 if (grantResults.length > 0) {
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                        textView.setText("You will be notified when you arrive at The ROW");
+                        textView.setText(getString(R.string.outsideROW));
                         addGeofence();
                     }
                 }
@@ -258,32 +297,12 @@ public class MainActivity extends AppCompatActivity {
             case REQUEST_LOCATION_UPDATE: {
                 if (grantResults.length > 0) {
                     if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                        textView.setText("You will be notified when you arrive at The ROW");
+                        textView.setText(getString(R.string.outsideROW));
                         startUpdatingLocation();
                     }
                 }
             }
         }
-    }
-
-    public void slowDownUpdates() {
-        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setInterval(LONG_INTERVAL)
-                .setFastestInterval(SHORT_INTERVAL/2);
-
-        startUpdatingLocation();
-    }
-
-    public void speedUpUpdates() {
-        mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(SHORT_INTERVAL)
-                .setFastestInterval(SHORT_INTERVAL/2);
-
-        startUpdatingLocation();
     }
 
 
