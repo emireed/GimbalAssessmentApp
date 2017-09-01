@@ -3,17 +3,18 @@ package com.example.emi.gimbalassessmentapp;
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.NotificationCompat;
-import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by emi on 8/30/17.
@@ -22,6 +23,8 @@ import com.google.android.gms.location.GeofencingEvent;
 public class GeofenceTransitionsIntentService extends IntentService {
 
     private static final String NAME = "Geofencing";
+    private static final String ROW_GEOFENCE_ID = String.valueOf(R.string.rowGeofenceID);
+    private static final String OUTER_GEOFENCE_ID = String.valueOf(R.string.outerGeofenceID);
 
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
@@ -37,7 +40,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
      */
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        Log.d("location", "Handling geofence intent");
 
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
@@ -46,17 +48,30 @@ public class GeofenceTransitionsIntentService extends IntentService {
 
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
 
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-            sendNotification();
+        List<String> geofenceIDList = toIDs(geofencingEvent.getTriggeringGeofences());
+        for (String geofenceID : geofenceIDList) {
+            if (geofenceID.equals(ROW_GEOFENCE_ID)) {
+                if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                    sendNotification();
+                    updateUX(true);
+                } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+                    updateUX(false);
+                }
+            } else if (geofenceID.equals(OUTER_GEOFENCE_ID)) {
+                if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+                    updateSpeed(true);
+                } else if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+                    updateSpeed(false);
+                }
+            }
         }
+
     }
 
     /**
      * This function creates and deploys a notification
      */
     private void sendNotification() {
-        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
-
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
 
         // Set all of the notification's values
@@ -72,5 +87,27 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         notificationManager.notify(0, builder.build());
+    }
+
+    private void updateUX(Boolean inROW) {
+        Intent receiverIntent = new Intent(String.valueOf(R.string.rowGeofenceIntent));
+        receiverIntent.putExtra("inROW", inROW);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(receiverIntent);
+    }
+
+    private void updateSpeed(Boolean inOuter) {
+        Intent receiverIntent = new Intent(String.valueOf(R.string.rowGeofenceIntent));
+        receiverIntent.putExtra("inOuter", inOuter);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(receiverIntent);
+    }
+
+    private List<String> toIDs(List<Geofence> geofenceList) {
+        List<String> geofenceIDList = new ArrayList<>();
+
+        for (Geofence geofence : geofenceList) {
+            geofenceIDList.add(geofence.getRequestId());
+        }
+
+        return geofenceIDList;
     }
 }

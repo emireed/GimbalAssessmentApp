@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">Gimbal Assessment App</string>
+    <string name="rowGeofenceIntent">row-geofence</string>
+    <string name="rowGeofenceID">ROW geofence for Gimbal</string>
+    <string name="outerGeofenceID">outer geofence</string>
 </resources>
