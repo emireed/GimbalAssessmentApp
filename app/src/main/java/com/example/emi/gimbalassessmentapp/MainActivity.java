@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
     // Static values about ROW geofence
     private static final double ROW_LAT = 34.0339128;
     private static final double ROW_LON = -118.2418602;
-    private static final float ROW_RAD = 21;
+    private static final float ROW_RAD = 21; // Value calculated from a circular 15,000sqft area
     private static final int SHORT_INTERVAL = 10000;
 
     // Static values about outer geofence
